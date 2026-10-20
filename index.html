@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Katalog Produk</title>
+<style>
+:root{--bg:#faf7f2;--card:#fff;--tx:#2a2420;--mut:#7a6f66;--ac:#c2410c;--actx:#fff;--bd:#e8e1d7;--wa:#15803d;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#1b1815;--card:#26221e;--tx:#f3ece4;--mut:#a89d92;--ac:#fb923c;--actx:#1b1815;--bd:#3a342e;--wa:#4ade80;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.45;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.wrap{max-width:1000px;margin:0 auto;padding:16px}
+header{text-align:center;padding:20px 0 8px}
+h1{margin:0;font-size:1.7rem}
+.tag{color:var(--mut);margin:4px 0 0}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);font:inherit}
+.bar{margin:16px 0 8px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:4px 0 10px}
+.chip{border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:6px 14px;border-radius:999px;cursor:pointer;white-space:nowrap;font:inherit;font-size:.9rem}
+.chip.on{background:var(--ac);color:var(--actx);border-color:var(--ac)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.pic{aspect-ratio:1/1;background:var(--bd);display:flex;align-items:center;justify-content:center;font-size:3rem;position:relative}
+.pic img{width:100%;height:100%;object-fit:cover}
+.sold{position:absolute;right:8px;bottom:8px;background:#000a;color:#fff;font-size:.75rem;padding:3px 8px;border-radius:6px}
+.body{padding:12px;display:flex;flex-direction:column;gap:4px;flex:1}
+.cat{font-size:.75rem;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.name{font-weight:600}
+.price{color:var(--ac);font-weight:700;font-size:1.1rem}
+.desc{font-size:.88rem;color:var(--mut);flex:1}
+.btn{border:0;border-radius:10px;padding:10px 12px;font:inherit;font-weight:600;cursor:pointer;text-align:center;text-decoration:none;display:block;background:var(--wa);color:#fff}
+.btn.off{background:var(--bd);color:var(--mut);pointer-events:none}
+.btn.sec{background:var(--card);color:var(--tx);border:1px solid var(--bd)}
+.btn.pri{background:var(--ac);color:var(--actx)}
+.btn.del{background:transparent;color:#dc2626;border:1px solid #dc262655}
+.row{display:flex;gap:6px;margin-top:6px}
+.adm{background:var(--card);border:1px dashed var(--ac);border-radius:12px;padding:10px;display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;align-items:center}
+.adm .btn{display:inline-block}
+.empty{text-align:center;color:var(--mut);padding:40px 0}
+.err{text-align:center;color:#dc2626;padding:30px 0}
+dialog{border:1px solid var(--bd);border-radius:16px;background:var(--bg);color:var(--tx);width:min(460px,94vw);padding:18px;max-height:90vh}
+dialog::backdrop{background:#0008}
+dialog label{display:block;font-size:.85rem;color:var(--mut);margin:10px 0 4px}
+dialog h2{margin:0 0 4px;font-size:1.2rem}
+.pv{width:96px;height:96px;object-fit:cover;border-radius:10px;margin-top:6px}
+footer{text-align:center;color:var(--mut);font-size:.8rem;padding:24px 0 8px}
+footer a{color:var(--mut);cursor:pointer;text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap"><div id="app"></div></div>
+<dialog id="dlg"></dialog>
+<script src="config.js"></script>
+<script>
+const C = window.NHOST_CONFIG;
+const svc = s => `https://${C.subdomain}.${s}.${C.region}.nhost.run/v1`;
+const AUTH = svc('auth'), GQL = svc('graphql'), STO = svc('storage');
+
+let store = { name: 'Toko Kami', tagline: '', wa: '' };
+let products = [];
+let sess = JSON.parse(localStorage.getItem('nh_sess') || 'null');
+let admin = false, q = '', cat = 'Semua', loadErr = '';
+
+const $ = s => document.querySelector(s);
+function el(t, a, ...k) {
+  const e = document.createElement(t);
+  for (const x in (a || {})) {
+    if (x === 'class') e.className = a[x];
+    else if (x.startsWith('on')) e.addEventListener(x.slice(2), a[x]);
+    else e.setAttribute(x, a[x]);
+  }
+  k.flat().filter(c => c !== null && c !== undefined && c !== false).forEach(c => e.append(c));
+  return e;
+}
+const rp = n => 'Rp' + Number(n || 0).toLocaleString('id-ID');
+const waNum = v => { let n = String(v || '').replace(/\D/g, ''); if (n.startsWith('0')) n = '62' + n.slice(1); return n; };
+const imgUrl = id => id ? `${STO}/files/${id}` : '';
+
+/* ---------- Nhost: auth, graphql, storage (REST murni, tanpa library) ---------- */
+function setSess(s) { sess = s; s ? localStorage.setItem('nh_sess', JSON.stringify(s)) : localStorage.removeItem('nh_sess'); }
+const mkSess = s => ({ accessToken: s.accessToken, refreshToken: s.refreshToken, exp: Date.now() + s.accessTokenExpiresIn * 1000 });
+
+async function token() {
+  if (!sess) return null;
+  if (Date.now() > sess.exp - 30000) {
+    const r = await fetch(AUTH + '/token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refreshToken: sess.refreshToken }) });
+    if (!r.ok) { setSess(null); admin = false; return null; }
+    setSess(mkSess(await r.json()));
+  }
+  return sess.accessToken;
+}
+async function login(email, password) {
+  const r = await fetch(AUTH + '/signin/email-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+  const j = await r.json();
+  if (!r.ok || !j.session) throw new Error(j.message || 'Email atau password salah');
+  setSess(mkSess(j.session));
+}
+async function gql(query, variables) {
+  const t = await token();
+  const h = { 'Content-Type': 'application/json' };
+  if (t) h.Authorization = 'Bearer ' + t;
+  const r = await fetch(GQL, { method: 'POST', headers: h, body: JSON.stringify({ query, variables }) });
+  const j = await r.json();
+  if (j.errors) throw new Error(j.errors[0].message);
+  return j.data;
+}
+async function upload(blob) {
+  const t = await token();
+  const fd = new FormData(); fd.append('file[]', blob, 'produk.jpg');
+  const r = await fetch(STO + '/files', { method: 'POST', headers: { Authorization: 'Bearer ' + t }, body: fd });
+  const j = await r.json();
+  if (!r.ok) throw new Error((j.error && j.error.message) || 'Upload foto gagal');
+  return j.processedFiles[0].id;
+}
+async function removeFile(id) {
+  if (!id) return;
+  const t = await token();
+  try { await fetch(`${STO}/files/${id}`, { method: 'DELETE', headers: { Authorization: 'Bearer ' + t } }); } catch (e) {}
+}
+
+async function load() {
+  try {
+    const d = await gql(`query{store_settings_by_pk(id:1){name tagline wa} products(order_by:{created_at:desc}){id name price category description image_id in_stock}}`);
+    if (d.store_settings_by_pk) store = d.store_settings_by_pk;
+    products = d.products; loadErr = '';
+  } catch (e) { loadErr = e.message; }
+  render();
+}
+
+/* ---------- Tampilan ---------- */
+function waLink(p) {
+  const t = 'Halo ' + store.name + ', saya mau pesan:\n' + p.name + ' (' + rp(p.price) + ')\nJumlah: 1\n\nApakah masih tersedia?';
+  return 'https://wa.me/' + waNum(store.wa) + '?text=' + encodeURIComponent(t);
+}
+
+function render() {
+  document.title = store.name;
+  const app = $('#app'); app.replaceChildren();
+  app.append(el('header', {}, el('h1', {}, store.name), el('p', { class: 'tag' }, store.tagline)));
+
+  if (sess) app.append(el('div', { class: 'adm' },
+    el('strong', {}, 'Admin'),
+    el('button', { class: 'btn sec', onclick: () => { admin = !admin; render(); } }, admin ? 'Tutup mode edit' : 'Buka mode edit'),
+    admin && el('button', { class: 'btn pri', onclick: () => editProduct() }, '+ Tambah produk'),
+    admin && el('button', { class: 'btn sec', onclick: editStore }, 'Pengaturan toko'),
+    el('button', { class: 'btn del', onclick: () => { setSess(null); admin = false; render(); } }, 'Keluar')
+  ));
+
+  const cats = ['Semua', ...new Set(products.map(p => p.category).filter(Boolean))];
+  app.append(el('div', { class: 'bar' }, el('input', { type: 'search', placeholder: 'Cari produk…', value: q, oninput: e => { q = e.target.value; list(); } })));
+  app.append(el('div', { class: 'chips' }, cats.map(c => el('button', { class: 'chip' + (c === cat ? ' on' : ''), onclick: () => { cat = c; render(); } }, c))));
+  app.append(el('div', { id: 'list' }));
+  app.append(el('footer', {}, '© ' + store.name + ' · ', sess ? '' : el('a', { onclick: loginDlg }, 'Admin')));
+  list();
+}
+
+function list() {
+  const box = $('#list'); if (!box) return;
+  if (loadErr) { box.replaceChildren(el('div', { class: 'err' }, 'Gagal memuat katalog: ' + loadErr)); return; }
+  const s = q.trim().toLowerCase();
+  const items = products.filter(p => (cat === 'Semua' || p.category === cat) && (!s || (p.name + ' ' + p.description + ' ' + p.category).toLowerCase().includes(s)));
+  box.replaceChildren(items.length ? el('div', { class: 'grid' }, items.map(card)) : el('div', { class: 'empty' }, 'Belum ada produk.'));
+}
+
+function card(p) {
+  return el('div', { class: 'card' },
+    el('div', { class: 'pic' }, p.image_id ? el('img', { src: imgUrl(p.image_id), alt: p.name, loading: 'lazy' }) : '🛍️', !p.in_stock && el('span', { class: 'sold' }, 'Stok habis')),
+    el('div', { class: 'body' },
+      p.category && el('div', { class: 'cat' }, p.category),
+      el('div', { class: 'name' }, p.name),
+      el('div', { class: 'price' }, rp(p.price)),
+      el('div', { class: 'desc' }, p.description),
+      p.in_stock ? el('a', { class: 'btn', href: waLink(p), target: '_blank', rel: 'noopener' }, 'Pesan via WhatsApp') : el('span', { class: 'btn off' }, 'Stok habis'),
+      admin && el('div', { class: 'row' },
+        el('button', { class: 'btn sec', onclick: () => editProduct(p) }, 'Edit'),
+        el('button', { class: 'btn del', onclick: () => delProduct(p) }, 'Hapus'))
+    ));
+}
+
+const field = (l, n) => [el('label', {}, l), n];
+const busy = (b, on) => { b.disabled = on; b.style.opacity = on ? .6 : 1; };
+
+function loginDlg() {
+  const em = el('input', { type: 'email', placeholder: 'email@contoh.com', autocomplete: 'username' });
+  const pw = el('input', { type: 'password', autocomplete: 'current-password' });
+  const dlg = $('#dlg');
+  const go = el('button', { class: 'btn pri', onclick: async () => {
+    busy(go, true);
+    try { await login(em.value.trim(), pw.value); dlg.close(); admin = true; await load(); }
+    catch (e) { alert(e.message); busy(go, false); }
+  } }, 'Masuk');
+  dlg.replaceChildren(el('h2', {}, 'Masuk admin'), field('Email', em), field('Password', pw),
+    el('div', { class: 'row', style: 'margin-top:16px' }, el('button', { class: 'btn sec', onclick: () => dlg.close() }, 'Batal'), go));
+  dlg.showModal();
+}
+
+function editProduct(p) {
+  const isNew = !p;
+  const d = p ? { ...p } : { name: '', price: '', category: cat !== 'Semua' ? cat : '', description: '', image_id: null, in_stock: true };
+  let newBlob = null;
+  const name = el('input', { value: d.name, placeholder: 'Nama produk' });
+  const price = el('input', { type: 'number', inputmode: 'numeric', value: d.price, placeholder: '75000' });
+  const c = el('input', { value: d.category, placeholder: 'Contoh: Fashion', list: 'cats' });
+  const dl = el('datalist', { id: 'cats' }, [...new Set(products.map(x => x.category).filter(Boolean))].map(x => el('option', { value: x })));
+  const desc = el('textarea', { rows: 3, placeholder: 'Deskripsi singkat' }); desc.value = d.description;
+  const stock = el('select', {}, el('option', { value: '1' }, 'Tersedia'), el('option', { value: '0' }, 'Stok habis')); stock.value = d.in_stock ? '1' : '0';
+  const pv = el('div', {}, d.image_id && el('img', { class: 'pv', src: imgUrl(d.image_id) }));
+  const file = el('input', { type: 'file', accept: 'image/*', onchange: async e => {
+    const f = e.target.files[0]; if (!f) return;
+    newBlob = await shrink(f); pv.replaceChildren(el('img', { class: 'pv', src: URL.createObjectURL(newBlob) }));
+  } });
+  const dlg = $('#dlg');
+  const save = el('button', { class: 'btn pri', onclick: async () => {
+    if (!name.value.trim()) { alert('Nama produk wajib diisi.'); return; }
+    busy(save, true);
+    try {
+      let image_id = d.image_id;
+      if (newBlob) { image_id = await upload(newBlob); if (p) await removeFile(p.image_id); }
+      const obj = { name: name.value.trim(), price: Number(price.value) || 0, category: c.value.trim(), description: desc.value.trim(), in_stock: stock.value === '1', image_id };
+      if (isNew) await gql(`mutation($o:products_insert_input!){insert_products_one(object:$o){id}}`, { o: obj });
+      else await gql(`mutation($id:uuid!,$s:products_set_input!){update_products_by_pk(pk_columns:{id:$id},_set:$s){id}}`, { id: p.id, s: obj });
+      dlg.close(); await load();
+    } catch (e) { alert('Gagal menyimpan: ' + e.message); busy(save, false); }
+  } }, 'Simpan produk');
+  dlg.replaceChildren(el('h2', {}, isNew ? 'Tambah produk' : 'Edit produk'),
+    field('Nama', name), field('Harga (Rp)', price), field('Kategori', c), dl, field('Deskripsi', desc), field('Stok', stock), field('Foto produk', file), pv,
+    el('div', { class: 'row', style: 'margin-top:16px' }, el('button', { class: 'btn sec', onclick: () => dlg.close() }, 'Batal'), save));
+  dlg.showModal();
+}
+
+async function delProduct(p) {
+  if (!confirm('Hapus produk "' + p.name + '"?')) return;
+  try {
+    await gql(`mutation($id:uuid!){delete_products_by_pk(id:$id){id}}`, { id: p.id });
+    await removeFile(p.image_id); await load();
+  } catch (e) { alert('Gagal menghapus: ' + e.message); }
+}
+
+function editStore() {
+  const n = el('input', { value: store.name });
+  const t = el('input', { value: store.tagline });
+  const w = el('input', { value: store.wa, placeholder: '08123456789', inputmode: 'tel' });
+  const dlg = $('#dlg');
+  const save = el('button', { class: 'btn pri', onclick: async () => {
+    busy(save, true);
+    try {
+      await gql(`mutation($s:store_settings_set_input!){update_store_settings_by_pk(pk_columns:{id:1},_set:$s){id}}`, { s: { name: n.value.trim() || 'Toko Kami', tagline: t.value.trim(), wa: waNum(w.value) } });
+      dlg.close(); await load();
+    } catch (e) { alert('Gagal menyimpan: ' + e.message); busy(save, false); }
+  } }, 'Simpan');
+  dlg.replaceChildren(el('h2', {}, 'Pengaturan toko'), field('Nama toko', n), field('Slogan', t), field('Nomor WhatsApp pesanan', w),
+    el('div', { class: 'row', style: 'margin-top:16px' }, el('button', { class: 'btn sec', onclick: () => dlg.close() }, 'Batal'), save));
+  dlg.showModal();
+}
+
+function shrink(file) {
+  return new Promise(res => {
+    const r = new FileReader();
+    r.onload = () => {
+      const im = new Image();
+      im.onload = () => {
+        const k = Math.min(1, 900 / Math.max(im.width, im.height));
+        const cv = document.createElement('canvas');
+        cv.width = Math.round(im.width * k); cv.height = Math.round(im.height * k);
+        cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+        cv.toBlob(b => res(b), 'image/jpeg', 0.8);
+      };
+      im.src = r.result;
+    };
+    r.readAsDataURL(file);
+  });
+}
+
+render();
+load();
+</script>
+</body>
+</html>

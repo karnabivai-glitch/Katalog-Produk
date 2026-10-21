@@ -177,7 +177,7 @@ function card(p) {
     ));
 }
 
-const field = (l, n) => [el('label', {}, l), n];
+const field = (l, n) => { const f = document.createDocumentFragment(); f.append(el('label', {}, l), n); return f; };
 const busy = (b, on) => { b.disabled = on; b.style.opacity = on ? .6 : 1; };
 
 function loginDlg() {

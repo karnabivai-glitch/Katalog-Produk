@@ -30,21 +30,31 @@ textarea{resize:vertical}
 .chip{border:2px solid var(--ink);background:#fff;color:var(--ink);padding:7px 16px;border-radius:999px;cursor:pointer;white-space:nowrap;font:inherit;font-weight:700;font-size:.92rem}
 .chip.on{background:var(--yl);box-shadow:2px 2px 0 var(--ink)}
 
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px}
-@media (min-width:640px){.grid{grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:20px}}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (min-width:900px){.grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}}
 .card{background:var(--card);border:2.5px solid var(--ink);border-radius:20px;box-shadow:4px 4px 0 var(--ink);overflow:hidden;display:flex;flex-direction:column}
-.pic{aspect-ratio:1/1;background:#ffe27a;border-bottom:2.5px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:3.2rem;position:relative}
+.pic{position:relative;width:100%;aspect-ratio:5/4;border-bottom:2.5px solid var(--ink);background:#ffe27a;overflow:hidden}
+.pbtn{position:absolute;inset:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:0;margin:0;border:0;background:transparent;cursor:zoom-in;font:inherit;font-size:3.2rem;color:inherit}
 .card:nth-child(4n+2) .pic{background:#9ff0e1}
 .card:nth-child(4n+3) .pic{background:#ffb3c7}
 .card:nth-child(4n+4) .pic{background:#b8d4ff}
-.pic img{width:100%;height:100%;object-fit:cover;display:block}
+.pic img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .25s}
+.pic:hover img{transform:scale(1.05)}
 .card.out .pic img{filter:grayscale(1)}
-.price{position:absolute;left:8px;bottom:8px;background:var(--yl);border:2px solid var(--ink);border-radius:999px;padding:3px 12px;font-family:Fredoka,"Plus Jakarta Sans",sans-serif;font-weight:700;font-size:1.02rem;color:var(--ink)}
-.sold{position:absolute;right:8px;top:8px;background:var(--ink);color:#fff;font-size:.78rem;font-weight:700;padding:3px 10px;border-radius:999px}
-.body{padding:12px 13px 14px;display:flex;flex-direction:column;gap:5px;flex:1}
+.zoom{position:absolute;right:8px;bottom:8px;background:#fff;border:2px solid var(--ink);border-radius:999px;font-size:.72rem;font-weight:700;padding:2px 10px;color:var(--ink)}
+.sold{position:absolute;left:8px;top:8px;background:var(--ink);color:#fff;font-size:.78rem;font-weight:700;padding:3px 10px;border-radius:999px}
+.info{padding:12px 13px 13px;display:flex;flex-direction:column;gap:6px}
+.name{font-weight:700;font-size:1rem;line-height:1.3;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.meta{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.price{font-family:Fredoka,"Plus Jakarta Sans",sans-serif;font-weight:700;color:var(--pk);font-size:1.2rem}
+.wa{flex:none;width:44px;height:44px;border-radius:50%;background:var(--wa);border:2.5px solid var(--ink);box-shadow:2px 2px 0 var(--ink);display:flex;align-items:center;justify-content:center;text-decoration:none}
+.wa svg{width:21px;height:21px;fill:#fff}
+.wa:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--ink)}
+.wa.off{background:#e5e3ef;border-color:#c9c6dc;box-shadow:none;pointer-events:none}
+.wa.off svg{fill:#9a97b3}
 .cat{align-self:flex-start;background:#d6f7f0;color:#0a6b5b;font-size:.74rem;font-weight:700;padding:2px 10px;border-radius:999px}
-.name{font-weight:700;font-size:1.02rem;line-height:1.3}
-.desc{font-size:.88rem;color:var(--mut);flex:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.admrow{padding:0 13px 13px;display:flex;gap:8px}
+.admrow .btn{flex:1;margin-top:0;padding:8px}
 
 .btn{border:2.5px solid var(--ink);border-radius:14px;padding:10px 12px;font:inherit;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;display:block;background:var(--wa);color:#fff;box-shadow:3px 3px 0 var(--ink);margin-top:6px}
 .btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
@@ -64,6 +74,30 @@ dialog::backdrop{background:#1d1b3acc}
 dialog label{display:block;font-size:.85rem;font-weight:700;margin:12px 0 5px}
 dialog h2{margin:0 0 4px;font-family:Fredoka,"Plus Jakarta Sans",sans-serif;font-size:1.4rem}
 .pv{width:96px;height:96px;object-fit:cover;border-radius:12px;border:2px solid var(--ink);margin-top:8px}
+.pic.noimg .pbtn{cursor:default}
+dialog#lb{width:100vw;height:100vh;max-width:none;max-height:none;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:hidden}
+dialog#lb[open]{display:block}
+dialog#lb::backdrop{background:#0a0a1fe6}
+.lbwrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;cursor:zoom-out;touch-action:pan-y}
+#lb img{max-width:92vw;max-height:82vh;object-fit:contain;display:block;border:3px solid #fff;border-radius:14px;background:#fff;cursor:default;user-select:none;-webkit-user-drag:none}
+.lbx{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:14px;width:44px;height:44px;border-radius:50%;border:2.5px solid var(--ink);background:var(--yl);color:var(--ink);font:inherit;font-size:1.2rem;font-weight:700;cursor:pointer;box-shadow:2px 2px 0 var(--ink)}
+.lbnav,.arr{display:flex;align-items:center;justify-content:center;border:2.5px solid var(--ink);background:#fff;color:var(--ink);font-weight:700;line-height:1;cursor:pointer;padding:0;border-radius:50%;position:absolute;top:50%;transform:translateY(-50%)}
+.lbnav{width:48px;height:48px;font-size:1.9rem;box-shadow:2px 2px 0 var(--ink)}
+.lbnav.l,.arr.l{left:10px}
+.lbnav.r,.arr.r{right:10px}
+.arr{width:32px;height:32px;font-size:1.3rem;border-width:2px;z-index:2}
+.cnt{position:absolute;left:8px;bottom:8px;background:#fff;border:2px solid var(--ink);border-radius:999px;font-size:.72rem;font-weight:700;padding:1px 10px;z-index:2;color:var(--ink)}
+.lbcnt{position:absolute;left:50%;top:calc(20px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:#fff;border:2px solid var(--ink);border-radius:999px;padding:3px 14px;font-weight:700;font-size:.85rem;color:var(--ink)}
+.lbdots{position:absolute;left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;justify-content:center;pointer-events:none}
+.dot{width:11px;height:11px;border-radius:50%;background:#ffffff55;border:2px solid #fff}
+.dot.on{background:var(--yl);border-color:var(--yl)}
+.thumbs{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.th{position:relative;width:84px;height:84px;border:2px solid var(--ink);border-radius:12px;overflow:hidden}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.th .main{position:absolute;left:4px;top:4px;background:var(--yl);border:1.5px solid var(--ink);border-radius:999px;font-size:.62rem;font-weight:700;padding:0 6px}
+.thb{position:absolute;right:3px;bottom:3px;display:flex;gap:3px}
+.thb button{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--ink);background:#fff;font-size:.75rem;line-height:1;padding:0;cursor:pointer;color:var(--ink)}
+.hint{font-size:.8rem;color:var(--mut);margin-top:6px}
 footer{text-align:center;color:var(--mut);font-size:.82rem;font-weight:600;padding:28px 0 10px}
 footer a{color:var(--mut);cursor:pointer;text-decoration:underline}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -72,6 +106,7 @@ footer a{color:var(--mut);cursor:pointer;text-decoration:underline}
 <body>
 <div class="wrap"><div id="app"></div></div>
 <dialog id="dlg"></dialog>
+<dialog id="lb"></dialog>
 <script src="config.js"></script>
 <script>
 const C = window.NHOST_CONFIG;
@@ -97,6 +132,16 @@ function el(t, a, ...k) {
 const rp = n => 'Rp' + Number(n || 0).toLocaleString('id-ID');
 const waNum = v => { let n = String(v || '').replace(/\D/g, ''); if (n.startsWith('0')) n = '62' + n.slice(1); return n; };
 const imgUrl = id => id ? `${STO}/files/${id}` : '';
+const imgs = p => (Array.isArray(p.image_ids) && p.image_ids.length) ? p.image_ids : (p.image_id ? [p.image_id] : []);
+function addSwipe(node, onLeft, onRight) {
+  let x0 = null, y0 = null;
+  node.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+  node.addEventListener('touchend', e => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0; x0 = null;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) (dx < 0 ? onLeft : onRight)();
+  }, { passive: true });
+}
 
 /* ---------- Nhost: auth, graphql, storage (REST murni, tanpa library) ---------- */
 function setSess(s) { sess = s; s ? localStorage.setItem('nh_sess', JSON.stringify(s)) : localStorage.removeItem('nh_sess'); }
@@ -142,7 +187,7 @@ async function removeFile(id) {
 
 async function load() {
   try {
-    const d = await gql(`query{store_settings_by_pk(id:1){name tagline wa} products(order_by:{created_at:desc}){id name price category description image_id in_stock}}`);
+    const d = await gql(`query{store_settings_by_pk(id:1){name tagline wa} products(order_by:{created_at:desc}){id name price category description image_id image_ids in_stock}}`);
     if (d.store_settings_by_pk) store = d.store_settings_by_pk;
     products = d.products; loadErr = '';
   } catch (e) { loadErr = e.message; }
@@ -184,18 +229,59 @@ function list() {
   box.replaceChildren(items.length ? el('div', { class: 'grid' }, items.map(card)) : el('div', { class: 'empty' }, 'Belum ada produk.'));
 }
 
+const waIcon = () => { const t = document.createElement('template'); t.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>'; return t.content.firstChild; };
+
 function card(p) {
+  const ids = imgs(p);
+  let i = 0;
+  const img = ids.length ? el('img', { src: imgUrl(ids[0]), alt: p.name, loading: 'lazy' }) : null;
+  const cnt = el('span', { class: 'cnt' }, '1/' + ids.length);
+  const go = d => { i = (i + d + ids.length) % ids.length; img.src = imgUrl(ids[i]); cnt.textContent = (i + 1) + '/' + ids.length; };
+  const arrow = (d, c, t) => el('button', { class: 'arr ' + c, type: 'button', 'aria-label': t, onclick: e => { e.stopPropagation(); go(d); } }, d < 0 ? '‹' : '›');
+  const pic = el('div', { class: 'pic' + (ids.length ? '' : ' noimg') },
+    el('button', { class: 'pbtn', type: 'button', 'aria-label': ids.length ? 'Perbesar foto ' + p.name : p.name, onclick: () => showImages(p, i) },
+      img || '🛍️',
+      !p.in_stock && el('span', { class: 'sold' }, 'Stok habis'),
+      ids.length > 0 && el('span', { class: 'zoom' }, 'Perbesar')),
+    ids.length > 1 && arrow(-1, 'l', 'Foto sebelumnya'),
+    ids.length > 1 && arrow(1, 'r', 'Foto berikutnya'),
+    ids.length > 1 && cnt);
+  if (ids.length > 1) addSwipe(pic, () => go(1), () => go(-1));
   return el('div', { class: 'card' + (p.in_stock ? '' : ' out') },
-    el('div', { class: 'pic' }, p.image_id ? el('img', { src: imgUrl(p.image_id), alt: p.name, loading: 'lazy' }) : '🛍️', el('span', { class: 'price' }, rp(p.price)), !p.in_stock && el('span', { class: 'sold' }, 'Stok habis')),
-    el('div', { class: 'body' },
-      p.category && el('span', { class: 'cat' }, p.category),
+    pic,
+    el('div', { class: 'info' },
       el('div', { class: 'name' }, p.name),
-      el('div', { class: 'desc' }, p.description),
-      p.in_stock ? el('a', { class: 'btn', href: waLink(p), target: '_blank', rel: 'noopener' }, 'Pesan via WhatsApp') : el('span', { class: 'btn off' }, 'Stok habis'),
-      admin && el('div', { class: 'row' },
-        el('button', { class: 'btn sec', onclick: () => editProduct(p) }, 'Edit'),
-        el('button', { class: 'btn del', onclick: () => delProduct(p) }, 'Hapus'))
-    ));
+      el('div', { class: 'meta' },
+        el('span', { class: 'price' }, rp(p.price)),
+        p.in_stock ? el('a', { class: 'wa', href: waLink(p), target: '_blank', rel: 'noopener', title: 'Pesan via WhatsApp', 'aria-label': 'Pesan ' + p.name + ' via WhatsApp' }, waIcon())
+                   : el('span', { class: 'wa off', 'aria-label': 'Stok habis' }, waIcon()))),
+    admin && el('div', { class: 'admrow' },
+      el('button', { class: 'btn sec', onclick: () => editProduct(p) }, 'Edit'),
+      el('button', { class: 'btn del', onclick: () => delProduct(p) }, 'Hapus')));
+}
+
+function showImages(p, start) {
+  const ids = imgs(p); if (!ids.length) return;
+  const lb = $('#lb');
+  let i = start || 0;
+  const img = el('img', { alt: p.name, draggable: 'false' });
+  const cnt = el('div', { class: 'lbcnt' });
+  const dots = el('div', { class: 'lbdots' }, ids.length > 1 && ids.map(() => el('span', { class: 'dot' })));
+  const draw = () => {
+    img.src = imgUrl(ids[i]); cnt.textContent = (i + 1) + ' / ' + ids.length;
+    [...dots.children].forEach((d, k) => d.classList.toggle('on', k === i));
+  };
+  const go = d => { i = (i + d + ids.length) % ids.length; draw(); };
+  const nav = (d, c, t) => el('button', { class: 'lbnav ' + c, type: 'button', 'aria-label': t, onclick: e => { e.stopPropagation(); go(d); } }, d < 0 ? '‹' : '›');
+  const wrap = el('div', { class: 'lbwrap' }, img);
+  const many = ids.length > 1;
+  lb.replaceChildren(wrap,
+    el('button', { class: 'lbx', type: 'button', 'aria-label': 'Tutup foto', onclick: () => lb.close() }, '✕'),
+    many && nav(-1, 'l', 'Foto sebelumnya'), many && nav(1, 'r', 'Foto berikutnya'), many && cnt, many && dots);
+  if (many) { addSwipe(wrap, () => go(1), () => go(-1)); ids.forEach(id => { new Image().src = imgUrl(id); }); }
+  lb._go = go;
+  draw();
+  lb.showModal();
 }
 
 const field = (l, n) => { const f = document.createDocumentFragment(); f.append(el('label', {}, l), n); return f; };
@@ -217,34 +303,51 @@ function loginDlg() {
 
 function editProduct(p) {
   const isNew = !p;
-  const d = p ? { ...p } : { name: '', price: '', category: cat !== 'Semua' ? cat : '', description: '', image_id: null, in_stock: true };
-  let newBlob = null;
+  const d = p ? { ...p } : { name: '', price: '', category: cat !== 'Semua' ? cat : '', description: '', in_stock: true };
+  const orig = p ? imgs(p) : [];
+  const items = orig.map(id => ({ id, url: imgUrl(id) }));
   const name = el('input', { value: d.name, placeholder: 'Nama produk' });
   const price = el('input', { type: 'number', inputmode: 'numeric', value: d.price, placeholder: '75000' });
   const c = el('input', { value: d.category, placeholder: 'Contoh: Fashion', list: 'cats' });
   const dl = el('datalist', { id: 'cats' }, [...new Set(products.map(x => x.category).filter(Boolean))].map(x => el('option', { value: x })));
   const desc = el('textarea', { rows: 3, placeholder: 'Deskripsi singkat' }); desc.value = d.description;
   const stock = el('select', {}, el('option', { value: '1' }, 'Tersedia'), el('option', { value: '0' }, 'Stok habis')); stock.value = d.in_stock ? '1' : '0';
-  const pv = el('div', {}, d.image_id && el('img', { class: 'pv', src: imgUrl(d.image_id) }));
-  const file = el('input', { type: 'file', accept: 'image/*', onchange: async e => {
-    const f = e.target.files[0]; if (!f) return;
-    newBlob = await shrink(f); pv.replaceChildren(el('img', { class: 'pv', src: URL.createObjectURL(newBlob) }));
+  const thumbs = el('div', { class: 'thumbs' });
+  const drawThumbs = () => {
+    thumbs.replaceChildren(...items.map((it, k) => el('div', { class: 'th' },
+      el('img', { src: it.url, alt: '' }),
+      k === 0 && el('span', { class: 'main' }, 'Utama'),
+      el('div', { class: 'thb' },
+        k > 0 && el('button', { type: 'button', title: 'Jadikan foto utama', onclick: () => { items.unshift(items.splice(k, 1)[0]); drawThumbs(); } }, '★'),
+        el('button', { type: 'button', title: 'Hapus foto', onclick: () => { items.splice(k, 1); drawThumbs(); } }, '✕')))));
+  };
+  const file = el('input', { type: 'file', accept: 'image/*', multiple: '', onchange: async e => {
+    const fs = [...e.target.files]; e.target.value = '';
+    for (const f of fs) {
+      if (items.length >= 8) { alert('Maksimal 8 foto per produk.'); break; }
+      const blob = await shrink(f); items.push({ blob, url: URL.createObjectURL(blob) });
+    }
+    drawThumbs();
   } });
+  drawThumbs();
   const dlg = $('#dlg');
   const save = el('button', { class: 'btn pri', onclick: async () => {
     if (!name.value.trim()) { alert('Nama produk wajib diisi.'); return; }
     busy(save, true);
     try {
-      let image_id = d.image_id;
-      if (newBlob) { image_id = await upload(newBlob); if (p) await removeFile(p.image_id); }
-      const obj = { name: name.value.trim(), price: Number(price.value) || 0, category: c.value.trim(), description: desc.value.trim(), in_stock: stock.value === '1', image_id };
+      const finalIds = [];
+      for (const it of items) finalIds.push(it.id || await upload(it.blob));
+      const obj = { name: name.value.trim(), price: Number(price.value) || 0, category: c.value.trim(), description: desc.value.trim(), in_stock: stock.value === '1', image_ids: finalIds, image_id: finalIds[0] || null };
       if (isNew) await gql(`mutation($o:products_insert_input!){insert_products_one(object:$o){id}}`, { o: obj });
       else await gql(`mutation($id:uuid!,$s:products_set_input!){update_products_by_pk(pk_columns:{id:$id},_set:$s){id}}`, { id: p.id, s: obj });
+      for (const id of orig) if (!finalIds.includes(id)) await removeFile(id);
       dlg.close(); await load();
     } catch (e) { alert('Gagal menyimpan: ' + e.message); busy(save, false); }
   } }, 'Simpan produk');
   dlg.replaceChildren(el('h2', {}, isNew ? 'Tambah produk' : 'Edit produk'),
-    field('Nama', name), field('Harga (Rp)', price), field('Kategori', c), dl, field('Deskripsi', desc), field('Stok', stock), field('Foto produk', file), pv,
+    field('Nama', name), field('Harga (Rp)', price), field('Kategori', c), dl, field('Deskripsi', desc), field('Stok', stock),
+    field('Foto produk (boleh lebih dari satu)', file), thumbs,
+    el('div', { class: 'hint' }, 'Foto pertama jadi foto utama. Tekan ★ untuk menjadikannya foto utama, ✕ untuk menghapus.'),
     el('div', { class: 'row', style: 'margin-top:16px' }, el('button', { class: 'btn sec', onclick: () => dlg.close() }, 'Batal'), save));
   dlg.showModal();
 }
@@ -253,7 +356,8 @@ async function delProduct(p) {
   if (!confirm('Hapus produk "' + p.name + '"?')) return;
   try {
     await gql(`mutation($id:uuid!){delete_products_by_pk(id:$id){id}}`, { id: p.id });
-    await removeFile(p.image_id); await load();
+    for (const id of imgs(p)) await removeFile(id);
+    await load();
   } catch (e) { alert('Gagal menghapus: ' + e.message); }
 }
 
@@ -292,6 +396,8 @@ function shrink(file) {
   });
 }
 
+$('#lb').addEventListener('click', e => { const lb = $('#lb'); if (e.target === lb || e.target.classList.contains('lbwrap')) lb.close(); });
+document.addEventListener('keydown', e => { const lb = $('#lb'); if (!lb.open || !lb._go) return; if (e.key === 'ArrowLeft') lb._go(-1); if (e.key === 'ArrowRight') lb._go(1); });
 render();
 load();
 </script>

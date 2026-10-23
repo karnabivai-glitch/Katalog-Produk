@@ -98,6 +98,30 @@ dialog#lb::backdrop{background:#0a0a1fe6}
 .thb{position:absolute;right:3px;bottom:3px;display:flex;gap:3px}
 .thb button{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--ink);background:#fff;font-size:.75rem;line-height:1;padding:0;cursor:pointer;color:var(--ink)}
 .hint{font-size:.8rem;color:var(--mut);margin-top:6px}
+.wrap{padding-bottom:100px}
+.wa{position:relative;cursor:pointer;padding:0;color:#fff;font:inherit}
+.qb{position:absolute;top:-9px;right:-9px;min-width:22px;height:22px;padding:0 5px;border-radius:999px;background:var(--yl);border:2px solid var(--ink);font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center;color:var(--ink)}
+#cartbar{position:fixed;left:0;right:0;bottom:0;display:none;justify-content:center;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));pointer-events:none;z-index:20}
+.cbtn{pointer-events:auto;width:min(560px,100%);display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--pk);color:#fff;border:3px solid var(--ink);border-radius:999px;box-shadow:4px 4px 0 var(--ink);padding:12px 20px;font:inherit;font-weight:700;cursor:pointer}
+.cb2{flex:1;text-align:center;font-family:Fredoka,"Plus Jakarta Sans",sans-serif;font-size:1.05rem}
+#toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 18px;border-radius:999px;font-weight:600;font-size:.9rem;z-index:30;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;text-align:center}
+#toast.on{opacity:1}
+dialog#cd{width:min(560px,94vw)}
+.crow{display:flex;gap:12px;padding:12px 0;border-bottom:2px dashed #cfcbe6}
+.cimg{flex:none;width:64px;height:64px;border-radius:12px;border:2px solid var(--ink);object-fit:cover;background:#ffe27a;display:flex;align-items:center;justify-content:center;font-size:1.6rem}
+.cinfo{flex:1;min-width:0}
+.cname{font-weight:700;overflow-wrap:anywhere}
+.cprice{font-size:.85rem;color:var(--mut)}
+.cprice b{color:var(--ink)}
+.step{display:flex;align-items:center;gap:8px;margin-top:6px}
+.step button{width:30px;height:30px;border-radius:50%;border:2px solid var(--ink);background:#fff;font-weight:700;font-size:1.1rem;line-height:1;padding:0;cursor:pointer;color:var(--ink)}
+.step span{min-width:24px;text-align:center;font-weight:700}
+.step .rm{width:auto;border-radius:999px;padding:0 12px;font-size:.8rem;color:#d3123f;margin-left:auto}
+.sum{background:#fff6cf;border:2.5px solid var(--ink);border-radius:16px;padding:10px 14px;margin:14px 0 4px}
+.sum div{display:flex;justify-content:space-between;gap:8px}
+.sum .tot{font-family:Fredoka,"Plus Jakarta Sans",sans-serif;font-weight:700;font-size:1.25rem;color:var(--pk);border-top:2px dashed var(--ink);margin-top:6px;padding-top:6px}
+.struk{background:#fff;border:2px dashed var(--ink);border-radius:12px;padding:14px;margin:12px 0;font:14px/1.45 "Courier New",Courier,monospace;white-space:pre-wrap;overflow-x:auto;color:#111}
+.col{display:flex;flex-direction:column;gap:2px}
 footer{text-align:center;color:var(--mut);font-size:.82rem;font-weight:600;padding:28px 0 10px}
 footer a{color:var(--mut);cursor:pointer;text-decoration:underline}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -107,6 +131,9 @@ footer a{color:var(--mut);cursor:pointer;text-decoration:underline}
 <div class="wrap"><div id="app"></div></div>
 <dialog id="dlg"></dialog>
 <dialog id="lb"></dialog>
+<dialog id="cd"></dialog>
+<div id="cartbar"></div>
+<div id="toast" role="status"></div>
 <script src="config.js"></script>
 <script>
 const C = window.NHOST_CONFIG;
@@ -189,17 +216,12 @@ async function load() {
   try {
     const d = await gql(`query{store_settings_by_pk(id:1){name tagline wa} products(order_by:{created_at:desc}){id name price category description image_id image_ids in_stock}}`);
     if (d.store_settings_by_pk) store = d.store_settings_by_pk;
-    products = d.products; loadErr = '';
+    products = d.products; loadErr = ''; syncCart();
   } catch (e) { loadErr = e.message; }
   render();
 }
 
 /* ---------- Tampilan ---------- */
-function waLink(p) {
-  const t = 'Halo ' + store.name + ', saya mau pesan:\n' + p.name + ' (' + rp(p.price) + ')\nJumlah: 1\n\nApakah masih tersedia?';
-  return 'https://wa.me/' + waNum(store.wa) + '?text=' + encodeURIComponent(t);
-}
-
 function render() {
   document.title = store.name;
   const app = $('#app'); app.replaceChildren();
@@ -229,7 +251,7 @@ function list() {
   box.replaceChildren(items.length ? el('div', { class: 'grid' }, items.map(card)) : el('div', { class: 'empty' }, 'Belum ada produk.'));
 }
 
-const waIcon = () => { const t = document.createElement('template'); t.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>'; return t.content.firstChild; };
+const cartIcon = () => { const t = document.createElement('template'); t.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1.003 1.003 0 0 0 20 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>'; return t.content.firstChild; };
 
 function card(p) {
   const ids = imgs(p);
@@ -253,8 +275,8 @@ function card(p) {
       el('div', { class: 'name' }, p.name),
       el('div', { class: 'meta' },
         el('span', { class: 'price' }, rp(p.price)),
-        p.in_stock ? el('a', { class: 'wa', href: waLink(p), target: '_blank', rel: 'noopener', title: 'Pesan via WhatsApp', 'aria-label': 'Pesan ' + p.name + ' via WhatsApp' }, waIcon())
-                   : el('span', { class: 'wa off', 'aria-label': 'Stok habis' }, waIcon()))),
+        p.in_stock ? el('button', { class: 'wa', type: 'button', title: 'Tambah ke keranjang', 'aria-label': 'Tambah ' + p.name + ' ke keranjang', onclick: () => addToCart(p) }, cartIcon(), el('span', { class: 'qb', 'data-pid': p.id }, qtyOf(p.id) || '+'))
+                   : el('span', { class: 'wa off', 'aria-label': 'Stok habis' }, cartIcon()))),
     admin && el('div', { class: 'admrow' },
       el('button', { class: 'btn sec', onclick: () => editProduct(p) }, 'Edit'),
       el('button', { class: 'btn del', onclick: () => delProduct(p) }, 'Hapus')));
@@ -282,6 +304,192 @@ function showImages(p, start) {
   lb._go = go;
   draw();
   lb.showModal();
+}
+
+/* ---------- Keranjang belanja (tersimpan di browser pelanggan) ---------- */
+let cart = { items: [], cust: { name: '', wa: '', addr: '', note: '' } };
+try {
+  const c = JSON.parse(localStorage.getItem('nh_cart') || 'null');
+  if (c && Array.isArray(c.items)) cart = { items: c.items, cust: { ...cart.cust, ...(c.cust || {}) } };
+} catch (e) {}
+let orderNo = null, orderAt = '', toastT;
+const saveCart = () => { try { localStorage.setItem('nh_cart', JSON.stringify(cart)); } catch (e) {} };
+const qtyOf = id => { const it = cart.items.find(i => i.id === id); return it ? it.qty : 0; };
+const totalQty = () => cart.items.reduce((a, i) => a + i.qty, 0);
+const totalVal = () => cart.items.reduce((a, i) => a + i.qty * i.price, 0);
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 1900); }
+function updateBadges() { document.querySelectorAll('.qb[data-pid]').forEach(b => { b.textContent = qtyOf(b.dataset.pid) || '+'; }); }
+function renderBar() {
+  const b = $('#cartbar'), n = totalQty();
+  if (!n) { b.replaceChildren(); b.style.display = 'none'; return; }
+  b.style.display = 'flex';
+  b.replaceChildren(el('button', { class: 'cbtn', type: 'button', onclick: openCart },
+    el('span', {}, '🛒 Keranjang'), el('span', { class: 'cb2' }, n + ' barang · ' + rp(totalVal())), el('span', {}, 'Lihat ›')));
+}
+function cartChanged() { orderNo = null; saveCart(); updateBadges(); renderBar(); }
+function addToCart(p) {
+  if (!p.in_stock) return;
+  const it = cart.items.find(i => i.id === p.id);
+  if (it) { if (it.qty >= 99) { toast('Maksimal 99 per barang'); return; } it.qty++; }
+  else cart.items.push({ id: p.id, name: p.name, price: p.price, qty: 1, img: imgs(p)[0] || null });
+  cartChanged(); toast(p.name + ' masuk keranjang');
+}
+function syncCart() {
+  const before = cart.items.length;
+  cart.items = cart.items.filter(i => {
+    const p = products.find(x => x.id === i.id);
+    if (!p || !p.in_stock) return false;
+    i.name = p.name; i.price = p.price; i.img = imgs(p)[0] || null; return true;
+  });
+  if (cart.items.length < before) toast('Sebagian barang dihapus karena sudah tidak tersedia');
+  cartChanged();
+}
+
+function openCart() { orderNo = null; drawCart(); $('#cd').showModal(); }
+
+function drawCart() {
+  const cd = $('#cd');
+  cd.scrollTop = 0;
+  if (!cart.items.length) {
+    cd.replaceChildren(el('h2', {}, 'Keranjang belanja'), el('div', { class: 'empty' }, 'Keranjang masih kosong.'),
+      el('div', { class: 'row' }, el('button', { class: 'btn pri', onclick: () => cd.close() }, 'Mulai belanja')));
+    return;
+  }
+  const chg = (it, d) => { it.qty = Math.min(99, it.qty + d); if (it.qty < 1) cart.items = cart.items.filter(x => x !== it); cartChanged(); drawCart(); };
+  const rows = cart.items.map(it => el('div', { class: 'crow' },
+    it.img ? el('img', { class: 'cimg', src: imgUrl(it.img), alt: '' }) : el('div', { class: 'cimg' }, '🛍️'),
+    el('div', { class: 'cinfo' },
+      el('div', { class: 'cname' }, it.name),
+      el('div', { class: 'cprice' }, rp(it.price) + ' × ' + it.qty + ' = ', el('b', {}, rp(it.price * it.qty))),
+      el('div', { class: 'step' },
+        el('button', { type: 'button', 'aria-label': 'Kurangi', onclick: () => chg(it, -1) }, '−'),
+        el('span', {}, it.qty),
+        el('button', { type: 'button', 'aria-label': 'Tambah', onclick: () => chg(it, 1) }, '+'),
+        el('button', { type: 'button', class: 'rm', onclick: () => { cart.items = cart.items.filter(x => x !== it); cartChanged(); drawCart(); } }, 'Hapus')))));
+  const bind = (node, key) => { node.addEventListener('input', () => { cart.cust[key] = node.value; saveCart(); }); return node; };
+  const area = (key, ph) => { const t = el('textarea', { rows: 2, placeholder: ph }); t.value = cart.cust[key]; return bind(t, key); };
+  cd.replaceChildren(
+    el('h2', {}, 'Keranjang belanja'),
+    ...rows,
+    el('div', { class: 'sum' },
+      el('div', {}, el('span', {}, 'Jenis barang'), el('b', {}, String(cart.items.length))),
+      el('div', {}, el('span', {}, 'Total qty'), el('b', {}, totalQty() + ' pcs')),
+      el('div', { class: 'tot' }, el('span', {}, 'Total nilai'), el('span', {}, rp(totalVal())))),
+    el('h2', { style: 'margin-top:16px' }, 'Data pemesan'),
+    field('Nama pemesan *', bind(el('input', { value: cart.cust.name, placeholder: 'Nama lengkap', autocomplete: 'name' }), 'name')),
+    field('No. WhatsApp pemesan', bind(el('input', { value: cart.cust.wa, placeholder: '08123456789', inputmode: 'tel', autocomplete: 'tel' }), 'wa')),
+    field('Alamat pengiriman', area('addr', 'Alamat lengkap penerima')),
+    field('Catatan untuk penjual', area('note', 'Contoh: warna, ukuran, atau permintaan lain')),
+    el('div', { class: 'row', style: 'margin-top:16px' },
+      el('button', { class: 'btn sec', onclick: () => cd.close() }, 'Lanjut belanja'),
+      el('button', { class: 'btn pri', onclick: () => { if (!cart.cust.name.trim()) { alert('Isi nama pemesan terlebih dahulu.'); return; } drawReceipt(); } }, 'Buat struk')));
+}
+
+/*RCPT-START*/
+const RW = 34;
+const rcenter = t => ' '.repeat(Math.max(0, Math.floor((RW - t.length) / 2))) + t;
+const rhr = () => '-'.repeat(RW);
+function rtwo(l, r) { const sp = RW - l.length - r.length; return sp >= 1 ? [l + ' '.repeat(sp) + r] : [l, ' '.repeat(Math.max(0, RW - r.length)) + r]; }
+function rwrap(text, first, rest) {
+  const out = []; let pre = first, line = '';
+  const room = () => RW - pre.length;
+  const flush = () => { out.push(pre + line); pre = rest; line = ''; };
+  for (const para of String(text).split('\n')) {
+    for (let word of para.split(/\s+/).filter(Boolean)) {
+      while (word.length > room()) {
+        if (line) flush();
+        const cut = room();
+        out.push(pre + word.slice(0, cut)); pre = rest; word = word.slice(cut);
+      }
+      if (line && (line + ' ' + word).length > room()) flush();
+      line = line ? line + ' ' + word : word;
+    }
+    if (line) flush();
+  }
+  if (!out.length) out.push(first.trimEnd());
+  return out;
+}
+function receiptLines(r) {
+  const L = [];
+  rwrap(r.store.toUpperCase(), '', '').forEach(x => L.push(rcenter(x)));
+  const head = L.length + 1;
+  L.push(rcenter('RESI PERSIAPAN BARANG'));
+  L.push(rhr());
+  const kv = (k, v) => { if (String(v || '').trim()) rwrap(v, (k + '       ').slice(0, 7) + ': ', ' '.repeat(9)).forEach(x => L.push(x)); };
+  kv('No', r.no); kv('Tanggal', r.at); kv('Pemesan', r.c.name); kv('No. WA', r.c.wa); kv('Alamat', r.c.addr);
+  L.push(rhr());
+  r.items.forEach((it, k) => {
+    const n = (k + 1) + '. ';
+    const ind = ' '.repeat(4 + n.length);
+    rwrap(it.name, '[ ] ' + n, ind).forEach(x => L.push(x));
+    L.push(...rtwo(ind + it.qty + ' x ' + r.rp(it.price), r.rp(it.qty * it.price)));
+  });
+  L.push(rhr());
+  L.push(...rtwo('Jenis barang', String(r.items.length)));
+  L.push(...rtwo('Total qty', r.qty + ' pcs'));
+  L.push(...rtwo('TOTAL NILAI', r.rp(r.val)));
+  L.push(rhr());
+  if (String(r.c.note || '').trim()) { rwrap(r.c.note, 'Catatan: ', ' '.repeat(9)).forEach(x => L.push(x)); L.push(rhr()); }
+  rwrap('Mohon konfirmasi ketersediaan barang dan ongkos kirim.', '', '').forEach(x => L.push(rcenter(x)));
+  L.push(rcenter('Terima kasih'));
+  L.head = head;
+  return L;
+}
+/*RCPT-END*/
+
+function genNo() {
+  const d = new Date(), z = n => String(n).padStart(2, '0');
+  return 'ORD-' + String(d.getFullYear()).slice(2) + z(d.getMonth() + 1) + z(d.getDate()) + '-' + Math.floor(100 + Math.random() * 900);
+}
+
+function drawReceipt() {
+  const cd = $('#cd');
+  if (!orderNo) { orderNo = genNo(); orderAt = new Date().toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }); }
+  const lines = receiptLines({ store: store.name, no: orderNo, at: orderAt, c: cart.cust, items: cart.items, qty: totalQty(), val: totalVal(), rp });
+  const text = lines.join('\n');
+  const copyBtn = el('button', { class: 'btn sec', onclick: async () => {
+    try { await navigator.clipboard.writeText(text); copyBtn.textContent = 'Tersalin ✓'; } catch (e) { copyBtn.textContent = 'Gagal menyalin'; }
+    setTimeout(() => { copyBtn.textContent = 'Salin teks struk'; }, 1800);
+  } }, 'Salin teks struk');
+  cd.scrollTop = 0;
+  cd.replaceChildren(
+    el('h2', {}, 'Struk pesanan'),
+    el('div', { class: 'hint' }, 'Periksa struk di bawah, lalu kirim ke penjual sebagai resi persiapan barang.'),
+    el('pre', { class: 'struk' }, text),
+    el('div', { class: 'col' },
+      el('button', { class: 'btn', onclick: () => sendWA(text) }, 'Kirim ke penjual via WhatsApp'),
+      el('button', { class: 'btn sec', onclick: () => saveImg(lines, orderNo) }, 'Simpan / bagikan gambar struk'),
+      copyBtn,
+      el('div', { class: 'row' },
+        el('button', { class: 'btn sec', onclick: drawCart }, '‹ Ubah pesanan'),
+        el('button', { class: 'btn del', onclick: () => { if (confirm('Kosongkan keranjang?')) { cart.items = []; cartChanged(); cd.close(); } } }, 'Kosongkan'))));
+}
+
+function sendWA(text) {
+  const n = waNum(store.wa);
+  if (!n) { alert('Nomor WhatsApp penjual belum diatur.'); return; }
+  const msg = 'Halo ' + store.name + ', berikut struk pesanan saya:\n\n```' + text + '```';
+  window.open('https://wa.me/' + n + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+}
+
+async function saveImg(lines, no) {
+  const fs = 22, lh = 32, pad = 30, mono = '"Courier New",Courier,monospace';
+  const m = document.createElement('canvas').getContext('2d'); m.font = fs + 'px ' + mono;
+  const cw = m.measureText('M').width, sc = 2;
+  const w = Math.ceil(cw * RW) + pad * 2, h = lines.length * lh + pad * 2;
+  const cv = document.createElement('canvas'); cv.width = w * sc; cv.height = h * sc;
+  const ctx = cv.getContext('2d'); ctx.scale(sc, sc);
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = '#111'; ctx.textBaseline = 'top';
+  lines.forEach((t, i) => { ctx.font = (i < lines.head ? 'bold ' : '') + fs + 'px ' + mono; ctx.fillText(t, pad, pad + i * lh + 3); });
+  const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+  const file = new File([blob], 'struk-' + no + '.png', { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: 'Struk pesanan ' + no }); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name;
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 }
 
 const field = (l, n) => { const f = document.createDocumentFragment(); f.append(el('label', {}, l), n); return f; };
